@@ -63,7 +63,6 @@ def main():
     model_name = args.snapshot.split('/')[-1].split('.')[0]
     total_lost = 0
     total_vot = 0
-    mean_vot_path = os.path.join('results', args.dataset, "SiamRPN++(Original)", 'baseline', 'mean_vot.txt')
 
     if args.dataset in ['VOT2016', 'VOT2018', 'VOT2019']:
         flag = 0
@@ -89,7 +88,7 @@ def main():
             rho = 12
             eps = 9
             freq_dims = 38
-            stride = 9														
+            stride = 9
 
             square_size = -1
             target_x, target_y = -1, -1
@@ -101,12 +100,10 @@ def main():
 
             seg_x = 0
             seg_y = 0
-            l2_normes = []
             square_size = 299
             size_group = (square_size, square_size)
             for idx, (img, gt_bbox) in enumerate(video):
               
-                print("--------- processing frame no. ", idx)
 
                 if len(gt_bbox) == 4:
                     gt_bbox = [gt_bbox[0], gt_bbox[1],
@@ -242,7 +239,6 @@ def main():
                             temp_score = vot_overlap(np.array(outputs_orig['bbox']), np.array(outputs_adv['bbox']), (img.shape[1], img.shape[0]))
                     
                             if temp_score == 0 :
-                                print("get zero scores.")
                                 stop_flag = 1
                         
                         
@@ -251,13 +247,11 @@ def main():
                         dims_record = []
                         sign_record = []
                     
-                        l2_norm = np.mean(get_diff(cv_initial_img_float32, cv_adv_image.astype(np.float32)))
-                        if l2_norm > perturb_max or n_steps >= iter_limit or stop_flag:
+                        if n_steps >= iter_limit or stop_flag:
 #                           iter_count += k
                             stop_flag = 0
                             if (found == 0):
                                 cv_adv_image = image_noise
-                            l2_normes.append(l2_norm)
                             break
                     last_preturb = cv_adv_image - image
                     img = cv_adv_image
@@ -267,12 +261,6 @@ def main():
                     [resx, resy, resw, resh] = pred_bbox
                     seg_x = resx
                     seg_y = resy
-                    
-                    #cv2.rectangle(img, pt1 = (int(pred_x), int(pred_y)), pt2 = (int(pred_x+pred_w),int(pred_y+pred_h)), color = (0,0,255), thickness = 2)
-                    #cv2.rectangle(img, pt1 = (int(cx), int(cy)), pt2 = (int(cx+w),int(cy+h)), color = (255,0,0), thickness = 2)
-                    #cv2.rectangle(img, pt1 = (int(target_x), int(target_y)), pt2 = (int(target_x+orgin_square_size),int(target_y+orgin_square_size)), color = (0,255,0),thickness = 2)
-                    #cv2.imwrite('./__pic/pic'+str(idx)+'.jpg', img)
-                    #cv2.waitKey()
 
                     overlap = vot_overlap(pred_bbox, gt_bbox, (img.shape[1], img.shape[0]))
                     if overlap > 0:
@@ -322,14 +310,7 @@ def main():
                         f.write("{:d}\n".format(x))
                     else:
                         f.write(','.join([vot_float2str("%.4f", i) for i in x])+'\n')
-            means = scores_sum / scores_num
-            with open(mean_vot_path, 'a') as f:
-                 f.write(video.name + ":  " + str(means) + "\n")
-            total_vot += means
             print('({:3d}) Video: {:12s} Time: {:4.1f}s Speed: {:3.1f}fps Lost: {:d}'.format(v_idx+1, video.name, toc, idx / toc, lost_number))
-            total_lost += lost_number
-        with open(mean_vot_path, 'a') as f:
-            f.write("total :  " + str(total_vot / 60) + "\n")
     else:
         # OPE tracking
         flag = 0
@@ -364,12 +345,10 @@ def main():
 
             seg_x = 0
             seg_y = 0
-            l2_normes = []
             square_size = 299
             size_group = (square_size, square_size)
             
             for idx, (img, gt_bbox) in enumerate(video):
-                print("--------- processing frame no. ", idx)
 
                 if len(gt_bbox) == 4:
                     gt_bbox = [gt_bbox[0], gt_bbox[1],
@@ -525,13 +504,11 @@ def main():
                         dims_record = []
                         sign_record = []
                     
-                        l2_norm = np.mean(get_diff(cv_initial_img_float32, cv_adv_image.astype(np.float32)))
-                        if l2_norm > perturb_max or n_steps >= iter_limit or stop_flag:
+                        if n_steps >= iter_limit or stop_flag:
 #                           iter_count += k
                             stop_flag = 0
                             if (found == 0):
                                 cv_adv_image = image_noise
-                            l2_normes.append(l2_norm)
                             break
                     last_preturb = cv_adv_image - image
                     img = cv_adv_image
@@ -548,13 +525,9 @@ def main():
                         scores_sum += overlap
                         scores_num += 1
                     else:
-                        # lost object
-                        print("^^^^^^^^^lost in frame ", idx)
+                        # lost object\
                         lost_number += 1
-                    
-
                 toc += cv2.getTickCount() - tic
-                
                 
                 if idx == 0:
                     cv2.destroyAllWindows()
